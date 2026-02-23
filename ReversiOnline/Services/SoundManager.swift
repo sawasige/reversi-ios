@@ -1,4 +1,5 @@
-import AVFoundation
+import AudioToolbox
+import UIKit
 
 @MainActor
 final class SoundManager: ObservableObject {
@@ -6,32 +7,26 @@ final class SoundManager: ObservableObject {
 
     @Published var isSoundEnabled = true
 
-    private var audioPlayers: [String: AVAudioPlayer] = [:]
-
     private init() {}
 
     func playPlaceSound() {
-        play("place")
+        guard isSoundEnabled else { return }
+        AudioServicesPlaySystemSound(1104) // Tock
     }
 
     func playFlipSound() {
-        play("flip")
+        guard isSoundEnabled else { return }
+        AudioServicesPlaySystemSound(1103) // Tink
+    }
+
+    func playPassSound() {
+        guard isSoundEnabled else { return }
+        AudioServicesPlaySystemSound(1057)
     }
 
     func playGameOverSound(won: Bool) {
-        play(won ? "victory" : "defeat")
-    }
-
-    private func play(_ name: String) {
         guard isSoundEnabled else { return }
-        guard let url = Bundle.main.url(forResource: name, withExtension: "mp3") else { return }
-
-        do {
-            let player = try AVAudioPlayer(contentsOf: url)
-            audioPlayers[name] = player
-            player.play()
-        } catch {
-            print("Sound play error: \(error)")
-        }
+        let generator = UINotificationFeedbackGenerator()
+        generator.notificationOccurred(won ? .success : .error)
     }
 }

@@ -12,7 +12,18 @@ struct BoardView: View {
 
             ZStack {
                 RoundedRectangle(cornerRadius: 8)
-                    .fill(Color.boardGreen)
+                    .fill(
+                        LinearGradient(
+                            colors: [
+                                Color(red: 0.0, green: 0.55, blue: 0.28),
+                                Color(red: 0.0, green: 0.45, blue: 0.22),
+                                Color(red: 0.0, green: 0.50, blue: 0.25),
+                                Color(red: 0.0, green: 0.42, blue: 0.20),
+                            ],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        )
+                    )
                     .shadow(color: .black.opacity(0.3), radius: 8, y: 4)
 
                 VStack(spacing: 0) {
@@ -24,7 +35,8 @@ struct BoardView: View {
                                     disk: viewModel.board[position],
                                     isValidMove: viewModel.validMoves.contains(position),
                                     isLastMove: viewModel.lastMove == position,
-                                    cellSize: cellSize
+                                    cellSize: cellSize,
+                                    flipDelay: viewModel.flippingDisks[position]
                                 )
                                 .onTapGesture {
                                     viewModel.placeDisk(at: position)

@@ -5,6 +5,7 @@ struct CellView: View {
     let isValidMove: Bool
     let isLastMove: Bool
     let cellSize: CGFloat
+    let flipDelay: Double?
 
     var body: some View {
         ZStack {
@@ -26,14 +27,8 @@ struct CellView: View {
             }
 
             if let disk = disk {
-                PieceView(disk: disk, size: cellSize * 0.8)
-                    .id(disk)
-                    .transition(.asymmetric(
-                        insertion: .scale.combined(with: .opacity),
-                        removal: .opacity
-                    ))
+                PieceView(disk: disk, size: cellSize * 0.8, flipDelay: flipDelay)
             }
         }
-        .animation(.easeInOut(duration: 0.3), value: disk)
     }
 }

@@ -28,6 +28,7 @@ final class GameViewModel: ObservableObject {
     @Published var lastMove: Position?
     @Published var message: String
     @Published var isAnimating: Bool
+    @Published var flippingDisks: [Position: Double] = [:]
 
     let gameMode: GameMode
     private var aiPlayer: AIPlayer?
@@ -79,6 +80,7 @@ final class GameViewModel: ObservableObject {
         lastMove = nil
         message = "黒の番です"
         isAnimating = false
+        flippingDisks = [:]
         updateValidMoves()
     }
 
@@ -89,10 +91,35 @@ final class GameViewModel: ObservableObject {
         lastMove = position
         let flipped = board.place(disk: currentTurn, at: position)
 
-        let animDuration = 0.3 + Double(flipped.count) * 0.05
+        // Play placement sound
+        SoundManager.shared.playPlaceSound()
+
+        // Calculate wave delays based on distance from placement position
+        var delays: [Position: Double] = [:]
+        let sortedFlips = flipped.sorted { a, b in
+            let distA = (a.row - position.row) * (a.row - position.row)
+                + (a.col - position.col) * (a.col - position.col)
+            let distB = (b.row - position.row) * (b.row - position.row)
+                + (b.col - position.col) * (b.col - position.col)
+            return distA < distB
+        }
+        for (index, pos) in sortedFlips.enumerated() {
+            delays[pos] = Double(index) * 0.08
+        }
+        flippingDisks = delays
+
+        // Play flip sound
+        if !flipped.isEmpty {
+            SoundManager.shared.playFlipSound()
+        }
+
+        // Wait for all animations to complete
+        let maxDelay = delays.values.max() ?? 0
+        let totalAnimDuration = maxDelay + 0.5 // max delay + flip animation (0.4s) + buffer
 
         Task {
-            try? await Task.sleep(for: .seconds(animDuration))
+            try? await Task.sleep(for: .seconds(totalAnimDuration))
+            self.flippingDisks = [:]
             self.isAnimating = false
             self.advanceTurn()
         }
@@ -107,6 +134,7 @@ final class GameViewModel: ObservableObject {
             updateValidMoves()
         } else if !board.validMoves(for: currentTurn).isEmpty {
             message = "\(nextDisk.name)はパスです"
+            SoundManager.shared.playPassSound()
             updateValidMoves()
         } else {
             endGame()
@@ -141,10 +169,17 @@ final class GameViewModel: ObservableObject {
         phase = .gameOver
         validMoves = []
 
-        if let winner = GameResult(darkCount: darkCount, lightCount: lightCount).winner {
+        let gameResult = GameResult(darkCount: darkCount, lightCount: lightCount)
+        if let winner = gameResult.winner {
             message = "\(winner.name)の勝ち！ (\(darkCount) - \(lightCount))"
+            if case .ai = gameMode {
+                SoundManager.shared.playGameOverSound(won: winner == .dark)
+            } else {
+                SoundManager.shared.playGameOverSound(won: true)
+            }
         } else {
             message = "引き分け！ (\(darkCount) - \(lightCount))"
+            SoundManager.shared.playGameOverSound(won: false)
         }
     }
 
