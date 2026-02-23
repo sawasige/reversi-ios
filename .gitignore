@@ -32,3 +32,4 @@ Pods/
 *.ipa
 *.dSYM.zip
 *.dSYM
+.claude/
